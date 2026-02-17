@@ -61,7 +61,53 @@ int main() {
 }
 ```
 
-Использование совместно с try/catch 
+Использование совместно с try/catch/throw
+```cpp
+cout<<"Друг занял денег"<<endl;
+    auto t =begin_transaction(friends);
+    string name;
+    try{
+
+    
+    cin >>name;
+     vector<string>::iterator iter1 = find(t.get().begin() , t.get().end() , name);
+     if(iter1 == t.get().end()) {
+        throw runtime_error("Друг '" + name + "' не найден в списке!");
+    }
+    
+    t.get().erase(iter1);
+    t.commit();
+    }
+    catch(exception& ex) {
+        cout<<"ошибка: " << ex.what() <<endl;
+        t.rollback();
+    }
+```
 Использование с перемещением
+```cpp
+void process(Transaction<string>&& t) {
+    t.get() = "new";
+    t.commit();
+}
+
+int main() {
+    string data = "Original";
+    
+   
+    auto t1 = begin_transaction(data);
+    t1.get() = "123";
+    
+   
+    process(std::move(t1));
+    
+    
+    
+    
+    
+    cout << "data: " << data << endl;  // выведет new
+    
+    return 0;
+}
+```
 ## <p align="center">Структура проекта</p>
 
