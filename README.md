@@ -7,24 +7,24 @@
 4. Писать более чистый и безопасный код
 
 ## <p align="center">Установка</p>
-данная библиотека использует принцип "header-only" так что достаточно лишь установить заголовочный файл [Transact.h]() в директорию вашего проекта 
+данная библиотека использует принцип "header-only" так что достаточно лишь установить заголовочный файл [Transact.h](https://github.com/Klounadich/TransactionLib/blob/main/Transact.h) в директорию вашего проекта 
 и подключить в коде следующим образом :
 ```cpp
 #include "Transact.h"
 ```
 ## <p align="center">Функции библиотеки </p>
-1. [begin_transaction(obj)]() - Создаёт новую транзакцию для объекта.
+1. [begin_transaction(obj)](https://github.com/Klounadich/TransactionLib/blob/e280635ff534ac355ce16d7ddb9d21adfbd77abf/Transact.h#L58) - Создаёт новую транзакцию для объекта.
 ```cpp
 auto t = begin_transaction(data);
 ```
-2. [get()]() - Является точкой входа . Возвращает ссылку на рабочую копию объекта. Все изменения должны выполняться через этот метод.
+2. [get()](https://github.com/Klounadich/TransactionLib/blob/e280635ff534ac355ce16d7ddb9d21adfbd77abf/Transact.h#L31) - Является точкой входа . Возвращает ссылку на рабочую копию объекта. Все изменения должны выполняться через этот метод.
 
 ```cpp
 
 auto t = begin_transaction(data);
 t.get().push_back(42);           
 ```
-3. [commit()]() - Подтверждает изменения
+3. [commit()](https://github.com/Klounadich/TransactionLib/blob/e280635ff534ac355ce16d7ddb9d21adfbd77abf/Transact.h#L36) - Подтверждает изменения
   ]
 ```cpp
 
@@ -32,7 +32,7 @@ auto t = begin_transaction(data);
 t.get().push_back(42);
 t.commit();           
 ```
-4.[rollback()]()  - Отменяет изменения
+4.[rollback()](https://github.com/Klounadich/TransactionLib/blob/e280635ff534ac355ce16d7ddb9d21adfbd77abf/Transact.h#L43)  - Отменяет изменения
  ]
 ```cpp
 
@@ -110,4 +110,62 @@ int main() {
 }
 ```
 ## <p align="center">Структура проекта</p>
+ класс Transaction
+ ```cpp
+template<typename T>
+class Transaction {
+private:
+    T* orig;              // Указатель на оригинал
+    T backup;             // Снимок "до"
+    T working;            // Рабочая копия
+    bool activ;           // Флаг активности
+};
+```
+запрещаем копирование  при создании и присваивании 
+```cpp
+Transaction (const Transaction&) = delete; 
+Transaction& operator = (const Transaction&) = delete;
+```
+Конструктор перемещения (реализован с использованием семантики перемещения 
+```cpp
+Transaction (Transaction&& other) noexcept : orig(other.orig) , snapshot(std::move(other.snapshot) ) , activ(other.activ) {
+    other.orig = nullptr; 
+    other.activ = false;
+} 
+```
+Деструктор (автоматически выполняет rollback)
+```cpp
+~Transaction(){ /
+    if(activ && orig) {
+        rollback();
+    }
+}
+```
+
+Релизации функций 
+```cpp
+T& get() {  
+   
+    return copy;
+}
+
+void commit() { 
+     if(activ && orig) {
+        *orig = copy; 
+    }
+    activ = false;
+}
+
+void rollback()  noexcept{
+    if(activ) {
+        activ = false;
+        *orig=snapshot;
+    }
+    activ = false;
+}
+
+bool is_active() { 
+    return activ;
+}
+```
 
